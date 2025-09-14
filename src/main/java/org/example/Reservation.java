@@ -5,21 +5,25 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 public class Reservation {
     private int reservationId;
     private int guestId;
     private int hotelId;
+    private int roomNumber;
     private LocalDate checkInDate;
     private LocalDate checkOutDate;
     private LocalDate reservationDate;
     private String status;
 
-    public Reservation(int reservationId, int guestId, int hotelId, LocalDate checkInDate, LocalDate checkOutDate, LocalDate reservationDate, String status) {
+    public Reservation(int reservationId, int guestId, int hotelId, int roomNumber, LocalDate checkInDate, LocalDate checkOutDate, LocalDate reservationDate, String status) {
         this.reservationId = reservationId;
         this.guestId = guestId;
         this.hotelId = hotelId;
+        this.roomNumber = roomNumber;
         this.checkInDate = checkInDate;
         this.checkOutDate = checkOutDate;
         this.reservationDate = reservationDate;
@@ -43,6 +47,13 @@ public class Reservation {
     public void setHotelId(int hotelId) {
         this.hotelId = hotelId;
     }
+    public int getRoomNumber() {
+        return roomNumber;
+    }
+    public void setRoomNumber(int roomNumber) {
+        this.roomNumber = roomNumber;
+    }
+
     public LocalDate getCheckInDate() {
         return checkInDate;
     }
@@ -68,7 +79,7 @@ public class Reservation {
         this.status = status;
     }
 
-    public void makeReservation(Connection conn, Room room) {
+    public void makeReservationsForRooms(Connection conn, Room room) {
         if (room.isAvailable()) {
             try {
                 String updateRoomSql = "UPDATE room SET available = ? WHERE room_number = ?";
@@ -80,17 +91,18 @@ public class Reservation {
 
                 this.status = "CONFIRMED";
                 String insertReservationSql =
-                        "INSERT INTO reservation (reservation_id, guest_id, hotel_id, check_in_date, check_out_date, reservation_date, status) " +
-                                "VALUES (?, ?, ?, ?, ?, ?, ?)";
+                        "INSERT INTO reservation (reservation_id, guest_id, hotel_id, room_number, check_in_date, check_out_date, reservation_date, status) " +
+                                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
                 try (PreparedStatement stmt = conn.prepareStatement(insertReservationSql)) {
                     stmt.setInt(1, this.getReservationId());
                     stmt.setInt(2, this.getGuestId());
                     stmt.setInt(3, this.getHotelId());
-                    stmt.setDate(4, java.sql.Date.valueOf(this.getCheckInDate()));
-                    stmt.setDate(5, java.sql.Date.valueOf(this.getCheckOutDate()));
-                    stmt.setDate(6, java.sql.Date.valueOf(this.getReservationDate()));
-                    stmt.setString(7, this.getStatus());
+                    stmt.setInt(4, this.getRoomNumber());
+                    stmt.setDate(5, java.sql.Date.valueOf(this.getCheckInDate()));
+                    stmt.setDate(6, java.sql.Date.valueOf(this.getCheckOutDate()));
+                    stmt.setDate(7, java.sql.Date.valueOf(this.getReservationDate()));
+                    stmt.setString(8, this.getStatus());
                     stmt.executeUpdate();
                 }
 
@@ -106,22 +118,19 @@ public class Reservation {
     public void cancelRoomReservation(Connection conn, int reservationId) {
         try {
 
-            String selectReservationSql = "SELECT hotel_id, guest_id FROM reservation WHERE reservation_id = ?";
-            int hotelId = -1;
-            int guestId = -1;
+            String selectSql = "SELECT room_number FROM reservation WHERE reservation_id = ?";
+            int roomNumber = -1;
 
-            try (PreparedStatement stmt = conn.prepareStatement(selectReservationSql)) {
+            try (PreparedStatement stmt = conn.prepareStatement(selectSql)) {
                 stmt.setInt(1, reservationId);
                 ResultSet rs = stmt.executeQuery();
                 if (rs.next()) {
-                    hotelId = rs.getInt("hotel_id");
-                    guestId = rs.getInt("guest_id");
+                    roomNumber = rs.getInt("room_number");
                 } else {
                     System.out.println("Reservation not found!");
                     return;
                 }
             }
-
 
             String updateReservationSql = "UPDATE reservation SET status = ? WHERE reservation_id = ?";
             try (PreparedStatement stmt = conn.prepareStatement(updateReservationSql)) {
@@ -130,21 +139,49 @@ public class Reservation {
                 stmt.executeUpdate();
             }
 
-            String updateRoomSql = "UPDATE room SET available = ? WHERE hotel_id = ? AND room_number IN " +
-                    "(SELECT room_number FROM reservation WHERE reservation_id = ?)";
+            String updateRoomSql = "UPDATE room SET available = ? WHERE room_number = ?";
             try (PreparedStatement stmt = conn.prepareStatement(updateRoomSql)) {
                 stmt.setBoolean(1, true);
-                stmt.setInt(2, hotelId);
-                stmt.setInt(3, reservationId);
+                stmt.setInt(2, roomNumber);
                 stmt.executeUpdate();
             }
 
             this.status = "CANCELED";
-            System.out.println("Reservation " + reservationId + " has been canceled and room made available.");
+            System.out.println("Reservation " + reservationId + " has been canceled, room " + roomNumber + " is now available.");
 
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    public static List<Reservation> getReservationsForHotel(Connection conn, int hotelId) {
+        List<Reservation> reservations = new ArrayList<>();
+        String sql = "SELECT reservation_id, guest_id, hotel_id, room_number, " +
+                "check_in_date, check_out_date, reservation_date, status " +
+                "FROM reservation WHERE hotel_id = ?";
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, hotelId);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                Reservation reservation = new Reservation(
+                        rs.getInt("reservation_id"),
+                        rs.getInt("guest_id"),
+                        rs.getInt("hotel_id"),
+                        rs.getInt("room_number"),
+                        rs.getDate("check_in_date").toLocalDate(),
+                        rs.getDate("check_out_date").toLocalDate(),
+                        rs.getDate("reservation_date").toLocalDate(),
+                        rs.getString("status")
+                );
+                reservations.add(reservation);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return reservations;
     }
 
     @Override
