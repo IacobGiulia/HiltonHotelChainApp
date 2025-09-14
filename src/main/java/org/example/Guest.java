@@ -1,5 +1,9 @@
 package org.example;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Connection;
+
 public class Guest {
 
     private int guestId;
@@ -47,13 +51,18 @@ public class Guest {
         this.hotelId = hotelId;
     }
 
-    void addGuests(Guest guest) {
-        System.out.println("Please insert the guest's information: ");
-        System.out.println("Guest Id: " + guest.getGuestId());
-        System.out.println("Guest Name: " + guest.getGuestName());
-        System.out.println("Guest Email: " + guest.getGuestEmail());
-        System.out.println("Guest Phone: " + guest.getGuestPhone());
-        System.out.println("Hotel Id: " + guest.getHotelId());
+    void addGuests(Connection conn, Guest guest) {
+        String sql="INSERT INTO guest (guest_name, guest_email, guest_phone, hotel_id) VALUES (?,?,?,?)";
+        try(PreparedStatement stmt = conn.prepareStatement(sql)){
+            stmt.setString(1, guest.getGuestName());
+            stmt.setString(2, guest.getGuestEmail());
+            stmt.setString(3, guest.getGuestPhone());
+            stmt.setInt(4, guest.getHotelId());
+            stmt.executeUpdate();
+            System.out.println("Guest successfully added!");
+        }catch(SQLException e){
+            e.printStackTrace();
+        }
 
     }
 
