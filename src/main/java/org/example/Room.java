@@ -67,7 +67,7 @@ public class Room {
             while (rs.next()) {
                 Room room = new Room(
                         rs.getInt("room_number"),
-                        rs.getString("type"),
+                        rs.getString("room_type"),
                         rs.getBoolean("available"),
                         rs.getInt("hotel_id")
                 );
@@ -76,7 +76,7 @@ public class Room {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return null;
+        return rooms;
     }
 
     public Room getRoom(Connection conn, int roomNumber)
@@ -88,7 +88,7 @@ public class Room {
             if (rs.next()) {
                 return new Room(
                         rs.getInt("room_number"),
-                        rs.getString("type"),
+                        rs.getString("room_type"),
                         rs.getBoolean("available"),
                         rs.getInt("hotel_id")
                 );

@@ -69,10 +69,13 @@ public class Main {
         while (true) {
             System.out.println("\n--- Admin Menu ---");
             System.out.println("1. Add Hotel");
-            System.out.println("2. Add Room");
-            System.out.println("3. Add Guest");
-            System.out.println("4. View all reservations for a hotel");
-            System.out.println("5. Exit");
+            System.out.println("2. View Hotel Details");
+            System.out.println("3. Add Room");
+            System.out.println("4. View Rooms for a Hotel");
+            System.out.println("5. View Room Details");
+            System.out.println("6. Add Guest");
+            System.out.println("7. View all reservations for a hotel");
+            System.out.println("8. Exit");
             System.out.print("Choose an option: ");
 
             int choice = sc.nextInt();
@@ -83,15 +86,24 @@ public class Main {
                     addHotel(conn, sc);
                     break;
                 case 2:
-                    addRoom(conn, sc);
+                    viewHotel(conn, sc);
                     break;
                 case 3:
-                    addGuest(conn, sc);
+                    addRoom(conn, sc);
                     break;
                 case 4:
-                    viewReservationsForHotel(conn, sc);
+                    viewHotelRooms(conn, sc);
                     break;
                 case 5:
+                    viewRoom(conn, sc);
+                    break;
+                case 6:
+                    addGuest(conn, sc);
+                    break;
+                case 7:
+                    viewReservationsForHotel(conn, sc);
+                    break;
+                case 8:
                     System.out.println("Goodbye!");
                     return;
                 default:
@@ -155,6 +167,18 @@ public class Main {
         hotel.addHotel(conn, hotel);
     }
 
+    private static void viewHotel(Connection conn, Scanner sc){
+        System.out.print("Enter hotel id: ");
+        int hotelId = sc.nextInt();
+        Hotel hotel = new Hotel(0, "", "");
+        Hotel result = hotel.getHotel(conn, hotelId);
+        if (result != null) {
+            System.out.println(result);
+        } else {
+            System.out.println("Hotel not found!");
+        }
+    }
+
     private static void addRoom(Connection conn, Scanner sc) {
         System.out.print("Enter room number: ");
         int roomNumber = sc.nextInt();
@@ -166,6 +190,34 @@ public class Main {
 
         Room room = new Room(roomNumber, type, true, hotelId);
         room.addRoom(conn, room);
+    }
+
+    private static void viewHotelRooms(Connection conn, Scanner sc){
+        System.out.println("Enter hotel id: ");
+        int hotelId = sc.nextInt();
+        Room room = new Room(0, "", true, hotelId);
+        List<Room> rooms = room.getRoomsForHotel(conn, hotelId);
+
+        if (rooms != null && !rooms.isEmpty()) {
+            System.out.println("Rooms for hotel ID " + hotelId + ":");
+            for (Room r : rooms) {
+                System.out.println(r);
+            }
+        } else {
+            System.out.println("No rooms found for this hotel.");
+        }
+    }
+
+    private static void viewRoom(Connection conn, Scanner sc){
+        System.out.print("Enter room number: ");
+        int roomNumber = sc.nextInt();
+        Room room = new Room(roomNumber, "", true, 0);
+        Room result = room.getRoom(conn, roomNumber);
+        if (result != null) {
+            System.out.println(result);
+        }else{
+            System.out.println("Room not found!");
+        }
     }
 
     private static void addGuest(Connection conn, Scanner sc) {
@@ -185,7 +237,7 @@ public class Main {
 
             Guest guest = new Guest(guestId, name, email, phone, hotelId);
             guest.addGuests(conn, guest);
-            System.out.println("Guest added successfully!");
+
 
         } catch (Exception e) {
             System.out.println("Error adding guest!");

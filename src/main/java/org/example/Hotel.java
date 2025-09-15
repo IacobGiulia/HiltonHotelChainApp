@@ -58,8 +58,8 @@ public class Hotel {
             if (rs.next()) {
                 return new Hotel(
                         rs.getInt("hotel_id"),
-                        rs.getString("name"),
-                        rs.getString("location")
+                        rs.getString("hotel_name"),
+                        rs.getString("hotel_location")
                 );
             }
         }catch(SQLException e){
