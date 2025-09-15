@@ -13,7 +13,7 @@ public class Hotel {
     private List<Reservation> reservations;
     private List<Guest> guests;
 
-    Hotel(int hotelId, String hotelName, String hotelLocation) {
+    public Hotel(int hotelId, String hotelName, String hotelLocation) {
         this.hotelId = hotelId;
         this.hotelName = hotelName;
         this.hotelLocation = hotelLocation;
